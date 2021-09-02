@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RestaurantApi.Services;
+using RestaurantAPI.Middleware;
 using RestaurantApii.DataBase;
 using System;
 using System.Collections.Generic;
@@ -37,6 +38,12 @@ namespace RestaurantApi
             services.AddAutoMapper(this.GetType().Assembly);
             //Us³uga do dodwania, pobierania restauraciji
             services.AddScoped<IRestaurantServies, RestaurantServies>();
+            //Logger do pliku txt 
+            services.AddScoped<ErrorHandlingMiddleware>();
+            //Swagger 
+            services.AddSwaggerGen();
+            //Loger 2 czas wykonania wiêkszy ni¿ 4 sekundy
+            services.AddScoped<RequestTimeMiddleware>();
 
             
         }
@@ -52,7 +59,16 @@ namespace RestaurantApi
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseMiddleware<ErrorHandlingMiddleware>();
+            app.UseMiddleware<RequestTimeMiddleware>();
+
             app.UseHttpsRedirection();
+
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Restaurant API");
+            });
 
             app.UseRouting();
 
