@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RestaurantApi.Models;
+using RestaurantApi.Services;
 using RestaurantApii.DataBase;
 using RestaurantApii.Entities;
 using System;
@@ -14,45 +15,69 @@ namespace RestaurantApi.Controllers
     [Route("api/restaurant")]
     public class RestaurantController : ControllerBase
     {
-        private readonly RestaurantDbContext _dbContext;
-        private readonly IMapper _mapper;
-        public RestaurantController(RestaurantDbContext dbContext, IMapper mapper)
+        private readonly IRestaurantServies _restaurantServies;
+        public RestaurantController(IRestaurantServies restaurantSerives)
         {
-            _dbContext = dbContext;
-            _mapper = mapper;
+            _restaurantServies = restaurantSerives;
+        }
+        [HttpPost]
+        public ActionResult CreateRestaurant([FromBody] CreateRestaurantDto dto)
+        {
+            if(!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var id =_restaurantServies.Create(dto);
+
+            return Created($"/api/restaurant/{id}", null);
         }
 
         [HttpGet]
         public ActionResult<IEnumerable<RestaurantDto>> GetAll()
         {
-            var restaurants = _dbContext
-                .Restaurants
-                .Include(r => r.Address)
-                .Include(r => r.Dishes)
-                .ToList();
-
-            var restaurantsDtos = _mapper.Map<List<RestaurantDto>>(restaurants);
-
+            var restaurantsDtos = _restaurantServies.GetAll();
             return Ok(restaurantsDtos);
         }
 
         [HttpGet("{id}")]
         public ActionResult<RestaurantDto> Get([FromRoute] int id)
         {
-            var restaurant = _dbContext
-                .Restaurants
-                .Include(r => r.Address)
-                .Include(r => r.Dishes)
-                .FirstOrDefault(x => x.Id == id);
+            var restaurant = _restaurantServies.GetById(id);
 
             if (restaurant is null)
             {
                 return NotFound();
             }
-            var restaurantDtos = _mapper.Map<RestaurantDto>(restaurant);
-            return Ok(restaurantDtos);
+            return Ok(restaurant);
         }
 
-        
+        [HttpDelete("{id}")]
+        public ActionResult<RestaurantDto> Delete([FromRoute] int id)
+        {
+            var isDeleted = _restaurantServies.Delete(id);
+
+            if (!isDeleted)
+            {
+                return NotFound();
+            }
+            return NoContent();
+        }
+
+        [HttpPut("{id}")]
+        public ActionResult Modify([FromBody] ModifyRestaurantDto dto, [FromRoute] int id)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var isModify = _restaurantServies.Modify(id, dto);
+            if (!isModify)
+            {
+                return NotFound();
+            }
+            return Ok();
+        }
     }
 }

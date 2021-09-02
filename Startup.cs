@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using RestaurantApi.Services;
 using RestaurantApii.DataBase;
 using System;
 using System.Collections.Generic;
@@ -34,6 +35,8 @@ namespace RestaurantApi
             services.AddScoped<RestaurantSeeder>();
             //Dodanie Mappera
             services.AddAutoMapper(this.GetType().Assembly);
+            //Us³uga do dodwania, pobierania restauraciji
+            services.AddScoped<IRestaurantServies, RestaurantServies>();
 
             
         }
