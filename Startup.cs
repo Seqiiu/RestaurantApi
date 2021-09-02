@@ -36,16 +36,18 @@ namespace RestaurantApi
             services.AddScoped<RestaurantSeeder>();
             //Dodanie Mappera
             services.AddAutoMapper(this.GetType().Assembly);
-            //Us³uga do dodwania, pobierania restauraciji
+            //Us³uga dodwania, pobierania restauraciji
             services.AddScoped<IRestaurantServies, RestaurantServies>();
+            //Us³uga dodowania, pobieranie dañ
+            services.AddScoped<IDishService, DishService>();
             //Logger do pliku txt 
             services.AddScoped<ErrorHandlingMiddleware>();
-            //Swagger 
-            services.AddSwaggerGen();
             //Loger 2 czas wykonania wiêkszy ni¿ 4 sekundy
             services.AddScoped<RequestTimeMiddleware>();
+            //Swagger 
+            services.AddSwaggerGen();
 
-            
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
