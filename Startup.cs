@@ -1,5 +1,6 @@
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -62,9 +63,12 @@ namespace RestaurantApi
             {
                 options.AddPolicy("HasNationality", builder => builder.RequireClaim("Nationality", "German", "Polish"));
                 options.AddPolicy("Atleast20", builder => builder.AddRequirements(new MinimumAgeRequirement(20)));
-                options.AddPolicy("CreatedAtleast2Restaurants",
-                    builder => builder.AddRequirements(new CreatedMultipleRestaurantsRequirement(2)));
+                //options.AddPolicy("CreatedAtleast2Restaurants",
+                //    builder => builder.AddRequirements(new CreatedMultipleRestaurantsRequirement(2)));
             });
+            services.AddScoped<IAuthorizationHandler, MinimumAgeRequirementHandler>();
+            services.AddScoped<IAuthorizationHandler, ResourceOperationRequirementHendler>();
+
 
             services.AddControllers().AddFluentValidation();
             //£aczenie z baz¹ danych 

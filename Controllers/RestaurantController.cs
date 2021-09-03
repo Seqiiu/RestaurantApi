@@ -9,6 +9,7 @@ using RestaurantApii.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace RestaurantApi.Controllers
@@ -28,12 +29,13 @@ namespace RestaurantApi.Controllers
         [Authorize(Roles = "Admin,Menager")]
         public ActionResult CreateRestaurant([FromBody] CreateRestaurantDto dto)
         {
-            var id = _restaurantServies.Create(dto);
+            var userId = int.Parse(User.FindFirst(c => c.Type ==ClaimTypes.NameIdentifier).Value);
+            var id = _restaurantServies.Create(dto, userId);
             return Created($"/api/restaurant/{id}", null);
         }
 
         [HttpGet]
-        [Authorize(Policy = "Nationality")]
+        [Authorize(Policy = "Atleast20")]
         public ActionResult<IEnumerable<RestaurantDto>> GetAll()
         {
             var restaurantsDtos = _restaurantServies.GetAll();
@@ -52,7 +54,7 @@ namespace RestaurantApi.Controllers
         [Authorize(Roles = "Admin,Menager")]
         public ActionResult<RestaurantDto> Delete([FromRoute] int id)
         {
-            _restaurantServies.Delete(id);
+            _restaurantServies.Delete(id, User);
 
             return NoContent();
         }
@@ -61,7 +63,7 @@ namespace RestaurantApi.Controllers
         [Authorize(Roles = "Admin,Menager")]
         public ActionResult Modify([FromBody] ModifyRestaurantDto dto, [FromRoute] int id)
         {
-            _restaurantServies.Modify(id, dto);
+            _restaurantServies.Modify(id, dto, User);
             return Ok();
         }
     }
