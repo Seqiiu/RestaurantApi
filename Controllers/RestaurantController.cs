@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RestaurantApi.Models;
@@ -14,6 +15,7 @@ namespace RestaurantApi.Controllers
 {
     [Route("api/restaurant")]
     [ApiController]
+    [Authorize]
     public class RestaurantController : ControllerBase
     {
         private readonly IRestaurantServies _restaurantServies;
@@ -21,14 +23,17 @@ namespace RestaurantApi.Controllers
         {
             _restaurantServies = restaurantSerives;
         }
+
         [HttpPost]
+        [Authorize(Roles = "Admin,Menager")]
         public ActionResult CreateRestaurant([FromBody] CreateRestaurantDto dto)
         {
-            var id =_restaurantServies.Create(dto);
+            var id = _restaurantServies.Create(dto);
             return Created($"/api/restaurant/{id}", null);
         }
 
         [HttpGet]
+        [Authorize(Policy = "Nationality")]
         public ActionResult<IEnumerable<RestaurantDto>> GetAll()
         {
             var restaurantsDtos = _restaurantServies.GetAll();
@@ -36,6 +41,7 @@ namespace RestaurantApi.Controllers
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public ActionResult<RestaurantDto> Get([FromRoute] int id)
         {
             var restaurant = _restaurantServies.GetById(id);
@@ -43,6 +49,7 @@ namespace RestaurantApi.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,Menager")]
         public ActionResult<RestaurantDto> Delete([FromRoute] int id)
         {
             _restaurantServies.Delete(id);
@@ -51,6 +58,7 @@ namespace RestaurantApi.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Menager")]
         public ActionResult Modify([FromBody] ModifyRestaurantDto dto, [FromRoute] int id)
         {
             _restaurantServies.Modify(id, dto);

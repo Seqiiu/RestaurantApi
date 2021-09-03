@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using RestaurantApi.Authorization;
 using RestaurantApi.Models;
 using RestaurantApi.Models.Validators;
 using RestaurantApi.Services;
@@ -56,6 +57,13 @@ namespace RestaurantApi
                     ValidAudience = authenticationSettings.JwtIssuer,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authenticationSettings.JwtKey)),
                 };
+            });
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("HasNationality", builder => builder.RequireClaim("Nationality", "German", "Polish"));
+                options.AddPolicy("Atleast20", builder => builder.AddRequirements(new MinimumAgeRequirement(20)));
+                options.AddPolicy("CreatedAtleast2Restaurants",
+                    builder => builder.AddRequirements(new CreatedMultipleRestaurantsRequirement(2)));
             });
 
             services.AddControllers().AddFluentValidation();
