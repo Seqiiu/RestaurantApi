@@ -1,17 +1,25 @@
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
+using RestaurantApi.Models;
+using RestaurantApi.Models.Validators;
 using RestaurantApi.Services;
 using RestaurantAPI.Middleware;
 using RestaurantApii.DataBase;
+using RestaurantApii.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace RestaurantApi
@@ -28,18 +36,48 @@ namespace RestaurantApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var authenticationSettings = new AuthenticationSettings();
 
-            services.AddControllers();
+            Configuration.GetSection("Authentication").Bind(authenticationSettings);
+
+            services.AddSingleton(authenticationSettings);
+            services.AddAuthentication(option =>
+            {
+                option.DefaultAuthenticateScheme = "Bearer";
+                option.DefaultScheme = "Bearer";
+                option.DefaultChallengeScheme = "Bearer";
+            }).AddJwtBearer(cfg =>
+            {
+                cfg.RequireHttpsMetadata = false;
+                cfg.SaveToken = true;
+                cfg.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidIssuer = authenticationSettings.JwtIssuer,
+                    ValidAudience = authenticationSettings.JwtIssuer,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authenticationSettings.JwtKey)),
+                };
+            });
+
+            services.AddControllers().AddFluentValidation();
             //£aczenie z baz¹ danych 
             services.AddDbContext<RestaurantDbContext>();
             //Akywowanie seedera 
             services.AddScoped<RestaurantSeeder>();
             //Dodanie Mappera
             services.AddAutoMapper(this.GetType().Assembly);
+
+            //Dodanie hashera hase³
+            services.AddScoped<IPasswordHasher<User>,PasswordHasher<User>>();
+            //Dodanie Valifdatora
+            services.AddScoped<IValidator<UserRegisterDto>, RegisterUserDtoValidator>();
+
             //Us³uga dodwania, pobierania restauraciji
             services.AddScoped<IRestaurantServies, RestaurantServies>();
             //Us³uga dodowania, pobieranie dañ
             services.AddScoped<IDishService, DishService>();
+            //Us³ugo dodwania i logowania urzytkowników
+            services.AddScoped<IAccountServices, AccountServices>();
+            
             //Logger do pliku txt 
             services.AddScoped<ErrorHandlingMiddleware>();
             //Loger 2 czas wykonania wiêkszy ni¿ 4 sekundy
@@ -63,6 +101,7 @@ namespace RestaurantApi
 
             app.UseMiddleware<ErrorHandlingMiddleware>();
             app.UseMiddleware<RequestTimeMiddleware>();
+            app.UseAuthentication();
 
             app.UseHttpsRedirection();
 
