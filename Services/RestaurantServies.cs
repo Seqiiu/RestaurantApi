@@ -10,6 +10,7 @@ using RestaurantApii.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -18,10 +19,10 @@ namespace RestaurantApi.Services
     public interface IRestaurantServies
     {
         RestaurantDto GetById(int id);
-        IEnumerable<RestaurantDto> GetAll();
-        int Create(CreateRestaurantDto dto, int userId);
-        void Delete(int id, ClaimsPrincipal user);
-        void Modify(int id, ModifyRestaurantDto dto, ClaimsPrincipal user);
+        PageResult<RestaurantDto> GetAll(RestaurantQuery query);
+        int Create(CreateRestaurantDto dto);
+        void Delete(int id);
+        void Modify(int id, ModifyRestaurantDto dto);
 
     }
     public class RestaurantServies : IRestaurantServies
@@ -30,12 +31,14 @@ namespace RestaurantApi.Services
         private readonly IMapper _mapper;
         private readonly ILogger<RestaurantServies> _logger;
         private readonly IAuthorizationService _authorizationService;
-        public RestaurantServies(RestaurantDbContext dbContext, IMapper mapper, ILogger<RestaurantServies> logger, IAuthorizationService authorizationService)
+        private readonly IUserContextServives _userContextServives;
+        public RestaurantServies(RestaurantDbContext dbContext, IMapper mapper, ILogger<RestaurantServies> logger, IAuthorizationService authorizationService, IUserContextServives userContextServives)
         {
             _dbContext = dbContext;
             _mapper = mapper;
             _logger = logger;
             _authorizationService = authorizationService;
+            _userContextServives = userContextServives;
         }
         //Pobiebanie Restauracji Po wskazanym ID
         public RestaurantDto GetById(int id )
@@ -53,24 +56,51 @@ namespace RestaurantApi.Services
             return result;
         }
        //Pobieranie Wszystkich Restauracji 
-        public IEnumerable<RestaurantDto> GetAll()
+        public PageResult<RestaurantDto> GetAll(RestaurantQuery query)
         {
-            var restaurants = _dbContext
-                .Restaurants
-                .Include(r => r.Address)
-                .Include(r => r.Dishes)
+            var baseQuary = _dbContext
+                 .Restaurants
+                 .Include(r => r.Address)
+                 .Include(r => r.Dishes)
+                 .Where(r => query.SearchPhrase == null || (r.Name.ToLower().Contains(query.SearchPhrase.ToLower())
+                             || r.Description.ToLower().Contains(query.SearchPhrase.ToLower())));
+
+            if (!string.IsNullOrEmpty(query.SortBy)) 
+            {
+                var columnsSelectors = new Dictionary<string, Expression<Func<Restaurant, object>>>
+                {
+                    {nameof(Restaurant.Name), r => r.Name},
+                    {nameof(Restaurant.Description), r => r.Description},
+                    {nameof(Restaurant.Category), r => r.Category},
+                };
+
+                var selectedColum = columnsSelectors[query.SortBy];
+
+
+                baseQuary = query.SortDirection== SortDirection.ASC
+                    ? baseQuary.OrderBy(selectedColum)
+                    : baseQuary.OrderByDescending(selectedColum);
+            }
+
+            var restaurants = baseQuary
+                .Skip(query.PageSize *(query.PageNumber -1))
+                .Take(query.PageSize)
                 .ToList();
 
-            var restaurantsDtos = _mapper.Map<List<RestaurantDto>>(restaurants);
+            var count = baseQuary.Count();
 
-            return restaurantsDtos;
+            var restaurantsDtos = _mapper.Map<List<RestaurantDto>>(restaurants);
+            
+            var result = new PageResult<RestaurantDto>(restaurantsDtos, count, query.PageSize,query.PageNumber);
+
+            return result;
         }
 
        //Twozenie nowej Restauracji 
-        public int Create(CreateRestaurantDto dto, int userId)
+        public int Create(CreateRestaurantDto dto)
         {
             var restaurant = _mapper.Map<Restaurant>(dto);
-            restaurant.CreatedById = userId;
+            restaurant.CreatedById = _userContextServives.GetUserId;
             _dbContext.Restaurants.Add(restaurant);
             _dbContext.SaveChanges();
 
@@ -78,7 +108,7 @@ namespace RestaurantApi.Services
         }
 
         //Usuwanie Restauracji z Adressem 
-        public void Delete(int id, ClaimsPrincipal user)
+        public void Delete(int id)
         {
             _logger.LogTrace($"Restaurant with id: {id} DELETE action invoked");
 
@@ -92,7 +122,7 @@ namespace RestaurantApi.Services
             {
                 throw new NotFoundException("Restaurant not found");
             }
-            var wynik = _authorizationService.AuthorizeAsync(user, restaurant, new ResourceOperationRequirement(ResourceOperation.Delete)).Result;
+            var wynik = _authorizationService.AuthorizeAsync(_userContextServives.User, restaurant, new ResourceOperationRequirement(ResourceOperation.Delete)).Result;
             if (!wynik.Succeeded)
             {
                 throw new ForbidException();
@@ -102,7 +132,7 @@ namespace RestaurantApi.Services
             _dbContext.SaveChanges();
         }
     
-        public void Modify(int id, ModifyRestaurantDto dto, ClaimsPrincipal user)
+        public void Modify(int id, ModifyRestaurantDto dto)
         {
             var restaurant = _dbContext
                 .Restaurants
@@ -113,7 +143,7 @@ namespace RestaurantApi.Services
                 throw new NotFoundException("Restaurant not found");
             }
 
-            var wynik = _authorizationService.AuthorizeAsync(user, restaurant, new ResourceOperationRequirement(ResourceOperation.Update)).Result;
+            var wynik = _authorizationService.AuthorizeAsync(_userContextServives.User, restaurant, new ResourceOperationRequirement(ResourceOperation.Update)).Result;
             if (!wynik.Succeeded)
             {
                 throw new ForbidException();

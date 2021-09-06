@@ -29,16 +29,15 @@ namespace RestaurantApi.Controllers
         [Authorize(Roles = "Admin,Menager")]
         public ActionResult CreateRestaurant([FromBody] CreateRestaurantDto dto)
         {
-            var userId = int.Parse(User.FindFirst(c => c.Type ==ClaimTypes.NameIdentifier).Value);
-            var id = _restaurantServies.Create(dto, userId);
+            var id = _restaurantServies.Create(dto);
             return Created($"/api/restaurant/{id}", null);
         }
 
         [HttpGet]
-        [Authorize(Policy = "Atleast20")]
-        public ActionResult<IEnumerable<RestaurantDto>> GetAll()
+        [AllowAnonymous]
+        public ActionResult<IEnumerable<RestaurantDto>> GetAll([FromQuery] RestaurantQuery query)
         {
-            var restaurantsDtos = _restaurantServies.GetAll();
+            var restaurantsDtos = _restaurantServies.GetAll(query);
             return Ok(restaurantsDtos);
         }
 
@@ -54,7 +53,7 @@ namespace RestaurantApi.Controllers
         [Authorize(Roles = "Admin,Menager")]
         public ActionResult<RestaurantDto> Delete([FromRoute] int id)
         {
-            _restaurantServies.Delete(id, User);
+            _restaurantServies.Delete(id);
 
             return NoContent();
         }
@@ -63,7 +62,7 @@ namespace RestaurantApi.Controllers
         [Authorize(Roles = "Admin,Menager")]
         public ActionResult Modify([FromBody] ModifyRestaurantDto dto, [FromRoute] int id)
         {
-            _restaurantServies.Modify(id, dto, User);
+            _restaurantServies.Modify(id, dto);
             return Ok();
         }
     }

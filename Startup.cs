@@ -63,11 +63,15 @@ namespace RestaurantApi
             {
                 options.AddPolicy("HasNationality", builder => builder.RequireClaim("Nationality", "German", "Polish"));
                 options.AddPolicy("Atleast20", builder => builder.AddRequirements(new MinimumAgeRequirement(20)));
-                //options.AddPolicy("CreatedAtleast2Restaurants",
-                //    builder => builder.AddRequirements(new CreatedMultipleRestaurantsRequirement(2)));
+                options.AddPolicy("CreatedAtleast2Restaurants",
+                    builder => builder.AddRequirements(new MinimumTwoRestaurantRequirement(2)));
             });
             services.AddScoped<IAuthorizationHandler, MinimumAgeRequirementHandler>();
             services.AddScoped<IAuthorizationHandler, ResourceOperationRequirementHendler>();
+            services.AddScoped<IAuthorizationHandler, MinimumTwoRestaurantRequirementHendler>();
+
+            services.AddScoped<IUserContextServives, UserContextServives>();
+            services.AddHttpContextAccessor();
 
 
             services.AddControllers().AddFluentValidation();
@@ -82,6 +86,7 @@ namespace RestaurantApi
             services.AddScoped<IPasswordHasher<User>,PasswordHasher<User>>();
             //Dodanie Valifdatora
             services.AddScoped<IValidator<UserRegisterDto>, RegisterUserDtoValidator>();
+            services.AddScoped<IValidator<RestaurantQuery>, RestaurantQueryValidator>();
 
             //Us³uga dodwania, pobierania restauraciji
             services.AddScoped<IRestaurantServies, RestaurantServies>();
