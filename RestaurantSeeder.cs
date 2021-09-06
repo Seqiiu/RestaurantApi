@@ -1,4 +1,5 @@
-﻿using RestaurantApii.DataBase;
+﻿using Microsoft.EntityFrameworkCore;
+using RestaurantApii.DataBase;
 using RestaurantApii.Entities;
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,12 @@ namespace RestaurantApi
 
             if (_restaurantDb.Database.CanConnect())
             {
+                var pending =  _restaurantDb.Database.GetPendingMigrations();
+                if (pending != null &&pending.Any())
+                {
+                    _restaurantDb.Database.Migrate();
+                }
+
                 if (!_restaurantDb.Roles.Any())
                 {
                     var Roles = GetRoles();

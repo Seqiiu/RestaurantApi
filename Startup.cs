@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -38,6 +39,7 @@ namespace RestaurantApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+
             var authenticationSettings = new AuthenticationSettings();
 
             Configuration.GetSection("Authentication").Bind(authenticationSettings);
@@ -75,8 +77,6 @@ namespace RestaurantApi
 
 
             services.AddControllers().AddFluentValidation();
-            //£aczenie z baz¹ danych 
-            services.AddDbContext<RestaurantDbContext>();
             //Akywowanie seedera 
             services.AddScoped<RestaurantSeeder>();
             //Dodanie Mappera
@@ -87,6 +87,14 @@ namespace RestaurantApi
             //Dodanie Valifdatora
             services.AddScoped<IValidator<UserRegisterDto>, RegisterUserDtoValidator>();
             services.AddScoped<IValidator<RestaurantQuery>, RestaurantQueryValidator>();
+
+
+
+            var connetingString = Configuration.GetConnectionString("MySql-LhHosting");
+            var serverVersion = new MySqlServerVersion(new Version(10, 3, 29));
+
+            services.AddDbContext<RestaurantDbContext>(options =>
+            options.UseMySql(connetingString, serverVersion));
 
             //Us³uga dodwania, pobierania restauraciji
             services.AddScoped<IRestaurantServies, RestaurantServies>();
@@ -117,6 +125,8 @@ namespace RestaurantApi
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, RestaurantSeeder restaurantSeeder)
         {
+            app.UseResponseCaching();
+
             app.UseStaticFiles();
 
             //£acznie FrontEndu  z Backendem
