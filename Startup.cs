@@ -102,12 +102,27 @@ namespace RestaurantApi
             //Swagger 
             services.AddSwaggerGen();
 
+            //£acznie FrontEndu  z Backendem
+            services.AddCors(options =>
+            {
+                options.AddPolicy("FrontEndClient", builder =>
+                builder.AllowAnyMethod()
+                .AllowAnyHeader()
+                .WithOrigins(Configuration["AllowedOrigins"]));
+            });
+
 
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, RestaurantSeeder restaurantSeeder)
         {
+            app.UseStaticFiles();
+
+            //£acznie FrontEndu  z Backendem
+            app.UseCors("FrontEndClient");
+
+
             //Dodawanie Wartoœci Podstawoych przy starcie programu 
             restaurantSeeder.Seed();
 
