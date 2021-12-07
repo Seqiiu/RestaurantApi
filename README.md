@@ -10,15 +10,12 @@ Git
 Technologies used:
 Asp.net core
 
-<<<<<<< HEAD
 Here you can see the running application: https://restaurant-apii.azurewebsites.net/swagger/index.html
 
 (if the application does not work, the server resource limit has been used up)
 
 
-![api swager](https://user-images.githubusercontent.com/78487952/132200191-c8eb2863-c025-48e6-b3ec-8b01ebd55470.jpg)
-=======
+
 ![api swager](https://user-images.githubusercontent.com/78487952/132234344-fb672895-2e49-4708-8952-26f755088a14.jpg)
 
->>>>>>> e7d5021434b29cf3914043dcc91d1f815ee4172a
 
