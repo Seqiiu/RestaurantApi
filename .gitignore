@@ -364,3 +364,7 @@ FodyWeavers.xsd
 
 # MeKey
 \DataBase\RestaurantDbContext.cs
+
+#Ignor
+
+\appsettings.Development.json
